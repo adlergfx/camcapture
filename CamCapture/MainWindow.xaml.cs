@@ -23,28 +23,32 @@ namespace CamCapture;
 /// </summary>
 public partial class MainWindow : Window
 {
-    private TcpListener listener;
-    private Thread listenerThread;
     private FilterInfoCollection cameras;
     private VideoCaptureDevice cam;
     private String folder;
     private bool screenshot = false; 
     private string prefix = null;
+    private Server server;
 
     private const string SYM_START = "4";
     private const string SYM_STOP  = "<";
 
-    private struct UserData
-    {
-        public Socket socket;
-        public byte[] data;
-    }
 
     public MainWindow()
     {
         InitializeComponent();
+        server = new  HTTPServer();
+        server.OnRequest += Server_OnRequest;
         tbServer_TextChanged(null, null);
         getCameras();
+    }
+
+    private string Server_OnRequest(Dictionary<string, string> req)
+    {
+        prefix = req.GetValueOrDefault("prefix", null);
+        screenshot = req.ContainsKey("screenshot");
+
+        return null;
     }
 
     private void getCameras()
@@ -130,94 +134,21 @@ public partial class MainWindow : Window
         }
     }
 
-    private void acceptConnection()
-    {
-        listenerThread = new Thread(() =>
-        {
-            while (listenerThread.IsAlive)
-            {
-                try
-                {
-                    Socket s = listener.AcceptSocket();
-                    Console.WriteLine($"accept {s.ToString()}");
-                    string mesg = "Hello World";
-                    s.Send( Encoding.UTF8.GetBytes(mesg) );
 
-                    UserData data = new UserData
-                    {
-                        socket = s,
-                        data = new byte[1024]
-                    };
-
-                    s.BeginReceive(data.data, 0, 1024, SocketFlags.None, OnReceive, data);
-                }
-                catch
-                {
-                    break;
-                }
-
-            }
-        });
-        listenerThread.Start();
-    }
-
-    private void OnReceive(System.IAsyncResult res)
-    {
-        UserData data = (UserData)res.AsyncState;
-        Socket s = data.socket;
-        int read = s.EndReceive(res);
-
-        string json = Encoding.UTF8.GetString(data.data, 0, read);
-        try
-        {
-            Dictionary<string, string> map = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
-
-            prefix = map.GetValueOrDefault("prefix", null);
-
-            if (map.ContainsKey("screenshot"))
-            {
-                screenshot = true;
-            }
-        }
-        catch {
-        }
-
-        s.BeginReceive(data.data,0,1024, SocketFlags.None,OnReceive, data);
-
-    }
 
     private void onServerStart(object sender, RoutedEventArgs e)
     {
-        bool isConnected = !tbServer.IsEnabled;
-
-        if (isConnected)
+        if (server.IsConnected)
         {
-            listenerThread.Interrupt();
-            listener.Stop();
-            listenerThread.Join();
-            listenerThread = null;
-            btnServer.Content = SYM_START;
+            server.Stop();
         }
         else
         {
-
-            string pstr = tbServer.Text;
-            int port = int.Parse(pstr);
-            listener = new TcpListener(port);
-            try
-            { 
-                listener.Start();
-                btnServer.Content = SYM_STOP;
-                acceptConnection();
-            }
-            catch
-            {
-                listener = null;
-                isConnected = true;
-            }
-
+            int port = int.Parse(tbServer.Text);
+            server.Start(port);
         }
-        tbServer.IsEnabled = isConnected;
+        tbServer.IsEnabled = !server.IsConnected;
+        btnServer.Content = server.IsConnected?SYM_STOP:SYM_START;
     }
 
     private void tbServer_TextChanged(object sender, TextChangedEventArgs e)
