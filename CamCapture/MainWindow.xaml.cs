@@ -43,6 +43,7 @@ public partial class MainWindow : Window
         server.OnRequest += Server_OnRequest;
         tbServer_TextChanged(null, null);
         getCameras();
+
     }
 
     private string Server_OnRequest(Dictionary<string, string> req)
@@ -88,6 +89,7 @@ public partial class MainWindow : Window
             cam = new VideoCaptureDevice(vid.MonikerString); // get First device
             VideoCapabilities res = (cbResolution.SelectedItem as VideoCap).Item;
 
+            CameraConfig.ConfigCamera(cameras[cbCams.SelectedIndex], cam);
 
             cam.VideoResolution = res;
             cam.NewFrame += Cam_NewFrame;
@@ -179,7 +181,10 @@ public partial class MainWindow : Window
 
         if (cbCams.SelectedIndex < 0) return;
         FilterInfo vid = cameras[cbCams.SelectedIndex];
-        cam = new VideoCaptureDevice(vid.MonikerString); // get First device
+
+        // i am not using the member here because i only try to get 
+        // camera properties and not aquire the camera
+        VideoCaptureDevice cam = new VideoCaptureDevice(vid.MonikerString); // get First device
 
         VideoCapabilities[] vcap = cam.VideoCapabilities;
         cbResolution.Items.Clear();
@@ -197,5 +202,11 @@ public partial class MainWindow : Window
     private void onPreviewChanged(object sender, RoutedEventArgs e)
     {
         preview = cbPreview.IsChecked ?? false;
+    }
+
+    private void btnReload_Click(object sender, RoutedEventArgs e)
+    {
+        if ((cam == null) || (cbCams.SelectedIndex < 0)) return;
+        CameraConfig.ConfigCamera(cameras[cbCams.SelectedIndex], cam);
     }
 }
