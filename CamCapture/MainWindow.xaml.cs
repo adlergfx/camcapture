@@ -29,7 +29,7 @@ public partial class MainWindow : Window
     private String folder;
     private bool screenshot = false; 
     private string prefix = null;
-    private Server server;
+    private HTTPServer server;
     private bool preview = false;
 
     private const string SYM_START = "4";
@@ -72,14 +72,16 @@ public partial class MainWindow : Window
         btnShot.IsEnabled = isCapturing;
         tbFolder.IsEnabled = !isCapturing;
         btnBrowse.IsEnabled = !isCapturing;
+        cbResolution.IsEnabled = !isCapturing;
+        cbCams.IsEnabled = !isCapturing;
+        image.Visibility = isCapturing ? Visibility.Visible : Visibility.Hidden;
+        btnPlay.Content = !isCapturing?SYM_START:SYM_STOP;
 
         if (cam != null)
         {
             cam.NewFrame -= Cam_NewFrame;
             cam.SignalToStop();
             cam = null;
-            btnPlay.Content = SYM_START;
-            image.Visibility = Visibility.Hidden;
         }
         else
         {
@@ -94,8 +96,6 @@ public partial class MainWindow : Window
             cam.VideoResolution = res;
             cam.NewFrame += Cam_NewFrame;
             cam.Start();
-            btnPlay.Content = SYM_STOP;
-            image.Visibility = Visibility.Visible;
         }
     }
 
@@ -113,12 +113,17 @@ public partial class MainWindow : Window
         bi.EndInit();
         bi.Freeze();
 
-        Dispatcher.Invoke(() =>
+        try
         {
-            if (image == null) return; // which can be in bad timings while closing applications
-            image.Visibility = Visibility.Visible; 
-            image.Source = bi; 
-        });
+            Dispatcher.Invoke(() =>
+            {
+                if (image == null) return; // which can be in bad timings while closing applications
+                image.Visibility = Visibility.Visible; 
+                image.Source = bi; 
+            });
+        } catch
+        {
+        }
 
         if (!screenshot) return;
         screenshot = false;

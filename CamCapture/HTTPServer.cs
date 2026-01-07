@@ -10,18 +10,24 @@ using System.Windows.Media.Media3D;
 
 namespace CamCapture
 {
-    class HTTPServer : Server
+    class HTTPServer 
     {
         private HttpListener listener;
         private Task HandleRequest;
         private byte[] buffer = new byte[1024];
 
+        public delegate string RequestHandler(Dictionary<string, string> req);
+        public event RequestHandler OnRequest = delegate { return null; };
 
 
 
-        public override bool IsConnected
+        public bool IsConnected
         {
             get => listener != null;
+        }
+        protected string Request(Dictionary<string, string> map)
+        {
+            return OnRequest(map);
         }
 
         private async Task OnHandleRequest()
@@ -85,7 +91,7 @@ namespace CamCapture
 
 
 
-        public override void Start(int port)
+        public void Start(int port)
         {
             listener = new HttpListener();
             // Attention: pathes have to end with /
@@ -101,7 +107,7 @@ namespace CamCapture
             }
         }
 
-        public override void Stop()
+        public void Stop()
         {
             listener.Close();
             HandleRequest = null;
