@@ -1,4 +1,5 @@
 ﻿using AForge.Video.DirectShow;
+using CamCapture.core;
 using Microsoft.Win32;
 using System.Drawing;
 using System.Drawing.Imaging;
@@ -29,6 +30,7 @@ public partial class MainWindow : Window
     private bool screenshot = false; 
     private string prefix = null;
     private Server server;
+    private bool preview = false;
 
     private const string SYM_START = "4";
     private const string SYM_STOP  = "<";
@@ -84,10 +86,10 @@ public partial class MainWindow : Window
             btnShot.IsEnabled = Directory.Exists(folder);
             FilterInfo vid = cameras[cbCams.SelectedIndex];
             cam = new VideoCaptureDevice(vid.MonikerString); // get First device
+            VideoCapabilities res = (cbResolution.SelectedItem as VideoCap).Item;
 
-            VideoCapabilities biggest = cam.VideoCapabilities.OrderBy(vc => -vc.FrameSize.Width).ThenBy(vc => -vc.FrameSize.Height).First();
 
-            cam.VideoResolution = biggest;
+            cam.VideoResolution = res;
             cam.NewFrame += Cam_NewFrame;
             cam.Start();
             btnPlay.Content = SYM_STOP;
@@ -97,7 +99,7 @@ public partial class MainWindow : Window
 
     private void Cam_NewFrame(object sender, AForge.Video.NewFrameEventArgs eventArgs)
     {
-        if (!screenshot) return;
+        if (!screenshot && !preview) return;
 
         Bitmap bmp = new Bitmap(eventArgs.Frame);
         BitmapImage bi = new BitmapImage();
@@ -116,6 +118,7 @@ public partial class MainWindow : Window
             image.Source = bi; 
         });
 
+        if (!screenshot) return;
         screenshot = false;
         string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
         string pre = prefix ?? "capture";
@@ -173,6 +176,26 @@ public partial class MainWindow : Window
     private void cbCams_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         btnPlay.IsEnabled = cbCams.SelectedIndex >= 0;
+
+        if (cbCams.SelectedIndex < 0) return;
+        FilterInfo vid = cameras[cbCams.SelectedIndex];
+        cam = new VideoCaptureDevice(vid.MonikerString); // get First device
+
+        VideoCapabilities[] vcap = cam.VideoCapabilities;
+        cbResolution.Items.Clear();
+        foreach (VideoCapabilities cap in vcap)
+        {
+            cbResolution.Items.Add( new VideoCap(cap) );
+        }
+        cbResolution.SelectedIndex = 0;
+
+
+    
+
     }
 
+    private void onPreviewChanged(object sender, RoutedEventArgs e)
+    {
+        preview = cbPreview.IsChecked ?? false;
+    }
 }
