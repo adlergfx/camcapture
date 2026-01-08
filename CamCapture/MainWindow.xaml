@@ -5,12 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:CamCapture"
         mc:Ignorable="d"
-        Title="Video Capture" Height="506" Width="473">
+        Title="Video Capture" Height="514" Width="473">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="113"/>
             <RowDefinition Height="85"/>
-            <RowDefinition Height="283*"/>
+            <RowDefinition Height="249*"/>
+            <RowDefinition Height="30"/>
         </Grid.RowDefinitions>
         <GroupBox Header="Config" Margin="0,1,0,0" RenderTransformOrigin="0.5,0.5" Height="98" VerticalAlignment="Top">
             <GroupBox.RenderTransform>
@@ -22,14 +23,14 @@
                 </TransformGroup>
             </GroupBox.RenderTransform>
             <Grid>
-                <TextBox x:Name="tbFolder" Margin="7,12,67,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="23" ToolTip="Directory to store images"/>
+                <TextBox x:Name="tbFolder" Margin="7,12,67,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="23" ToolTip="Directory to store images" TextChanged="tbFolder_TextChanged"/>
                 <Button x:Name="btnBrowse" Content="..." Margin="0,12,9,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="50" Height="23" Click="onBrowseDirectory" ToolTip="Browse Directories"/>
                 <TextBox x:Name="tbServer" Margin="58,0,66,8" TextWrapping="Wrap" Height="23" VerticalAlignment="Bottom" TextChanged="tbServer_TextChanged" Text="1880" TextAlignment="Center" ToolTip="Select Port where Server will be bound"/>
                 <Button x:Name="btnServer" Content="4" Margin="0,0,8,8" Height="23" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="50" Click="onServerStart" FontFamily="Webdings" IsEnabled="False" ToolTip="Start/Stop Server"/>
                 <Label Content="Port" Margin="7,43,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="32"/>
             </Grid>
         </GroupBox>
-        <Image x:Name="image" Margin="10,7,10,11" Grid.Row="2"/>
+        <Image x:Name="image" Margin="10,7,10,13" Grid.Row="2"/>
         <GroupBox x:Name="camGroup" Header="Camera" Height="86" VerticalAlignment="Center" Grid.Row="1">
             <Grid>
                 <ComboBox x:Name="cbCams" Margin="31,7,197,0" VerticalAlignment="Top" Height="23" SelectionChanged="cbCams_SelectionChanged" Grid.RowSpan="1" ToolTip="Select Camera"/>
@@ -40,6 +41,7 @@
                 <Button x:Name="btnReload" Content="q" HorizontalAlignment="Left" Margin="0,7,0,0" VerticalAlignment="Top" Height="23" FontFamily="Webdings" Width="26" Click="btnReload_Click" ToolTip="Reload Camera Config"/>
             </Grid>
         </GroupBox>
+        <StatusBar x:Name="sbStatus" Grid.Row="3"/>
 
     </Grid>
 </Window>

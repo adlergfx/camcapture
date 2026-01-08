@@ -1,9 +1,12 @@
 ﻿using AForge.Video.DirectShow;
 using CamCapture.core;
 using Microsoft.Win32;
+using Newtonsoft.Json;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
+using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -27,31 +30,52 @@ public partial class MainWindow : Window
     private FilterInfoCollection cameras;
     private VideoCaptureDevice cam;
     private String folder;
-    private bool screenshot = false; 
+    //private bool screenshot = false; 
     private string prefix = null;
     private HTTPServer server;
     private bool preview = false;
+    private string captureName;
 
     private const string SYM_START = "4";
     private const string SYM_STOP  = "<";
+    private const string DEF_PREFIX = "";
 
 
     public MainWindow()
     {
         InitializeComponent();
         server = new  HTTPServer();
-        server.OnRequest += Server_OnRequest;
+        server.AddRouteAction(HttpMethod.Post, new RouteAction("/capture", OnHttpCapture));
+        server.AddRouteAction(HttpMethod.Get, new RouteAction("/capture", OnHttpCapture));
         tbServer_TextChanged(null, null);
         getCameras();
 
     }
 
-    private string Server_OnRequest(Dictionary<string, string> req)
+    private bool OnHttpCapture(HttpListenerRequest request, HttpListenerResponse response)
     {
-        prefix = req.GetValueOrDefault("prefix", null);
-        screenshot = req.ContainsKey("screenshot");
+        if ( (request.HttpMethod == HttpMethod.Post.ToString()) && request.HasEntityBody)
+        {
+            string bodystr = server.getBody(request);
+            if (bodystr != null)
+            {
+                try
+                {
+                    Dictionary<string, string> body = JsonConvert.DeserializeObject<Dictionary<string, string>>(bodystr);
+                    prefix = body.GetValueOrDefault("prefix", DEF_PREFIX);
+                } catch { }
+            }
+        }
 
-        return null;
+        if (request.HttpMethod == HttpMethod.Get.ToString())
+        {
+            string[] parts = request.Url.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries );
+            if (parts.Length > 1) prefix = parts[1];
+        }
+
+        captureName = createCaptureName(prefix);
+        server.sendJson(response, System.IO.Path.GetFileName(captureName));
+        return true;
     }
 
     private void getCameras()
@@ -85,7 +109,6 @@ public partial class MainWindow : Window
         }
         else
         {
-            folder = tbFolder.Text;
             btnShot.IsEnabled = Directory.Exists(folder);
             FilterInfo vid = cameras[cbCams.SelectedIndex];
             cam = new VideoCaptureDevice(vid.MonikerString); // get First device
@@ -99,9 +122,10 @@ public partial class MainWindow : Window
         }
     }
 
+
     private void Cam_NewFrame(object sender, AForge.Video.NewFrameEventArgs eventArgs)
     {
-        if (!screenshot && !preview) return;
+        if (!HasCapture && !preview) return;
 
         Bitmap bmp = new Bitmap(eventArgs.Frame);
         BitmapImage bi = new BitmapImage();
@@ -125,13 +149,24 @@ public partial class MainWindow : Window
         {
         }
 
-        if (!screenshot) return;
-        screenshot = false;
-        string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
-        string pre = prefix ?? "capture";
-        string path = System.IO.Path.Combine(folder, $"{pre}{timestamp}.png");
-        bmp.Save(path);
+        if (!HasCapture) return;
+        bmp.Save(captureName);
         bmp.Dispose();
+        captureName = null;
+    }
+
+    private string createCaptureName(string prefix)
+    {
+        if (folder == null) return null;    // we can not capture
+        string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
+        string pre = prefix ?? DEF_PREFIX;
+        string path = System.IO.Path.Combine(folder, $"{pre}{timestamp}.png");
+        return path;
+    }
+
+    private bool HasCapture
+    {
+        get => captureName != null;
     }
 
     private void onBrowseDirectory(object sender, RoutedEventArgs e)
@@ -176,8 +211,8 @@ public partial class MainWindow : Window
 
     private void btnShot_Click(object sender, RoutedEventArgs e)
     {
-        if (screenshot) return;
-        screenshot = true;
+        if (captureName != null) return;
+        captureName = createCaptureName("manual");
     }
 
     private void cbCams_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -213,5 +248,10 @@ public partial class MainWindow : Window
     {
         if ((cam == null) || (cbCams.SelectedIndex < 0)) return;
         CameraConfig.ConfigCamera(cameras[cbCams.SelectedIndex], cam);
+    }
+
+    private void tbFolder_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        folder = tbFolder.Text;
     }
 }
