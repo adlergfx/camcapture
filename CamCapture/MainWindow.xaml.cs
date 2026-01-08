@@ -15,6 +15,7 @@ using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Documents;
 using System.Windows.Input;
+using System.Windows.Markup.Localizer;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
@@ -33,50 +34,83 @@ public partial class MainWindow : Window
     //private bool screenshot = false; 
     private string prefix = null;
     private HTTPServer server;
+    private REST rest;
     private bool preview = false;
     private string captureName;
 
     private const string SYM_START = "4";
     private const string SYM_STOP  = "<";
     private const string DEF_PREFIX = "";
+    private const string DATE_FORMAT = "yyyyMMddHHmmss";
+
 
 
     public MainWindow()
     {
         InitializeComponent();
         server = new  HTTPServer();
-        server.AddRouteAction(HttpMethod.Post, new RouteAction("/capture", OnHttpCapture));
-        server.AddRouteAction(HttpMethod.Get, new RouteAction("/capture", OnHttpCapture));
+        rest = new REST(server);
+        rest.CaptureFunc = onCapture;
+        rest.QueryFunc = onList;
+        rest.ImageFunc = onImage;
         tbServer_TextChanged(null, null);
         getCameras();
-
     }
 
-    private bool OnHttpCapture(HttpListenerRequest request, HttpListenerResponse response)
+    private byte[] onImage(string filename)
     {
-        if ( (request.HttpMethod == HttpMethod.Post.ToString()) && request.HasEntityBody)
-        {
-            string bodystr = server.getBody(request);
-            if (bodystr != null)
-            {
-                try
-                {
-                    Dictionary<string, string> body = JsonConvert.DeserializeObject<Dictionary<string, string>>(bodystr);
-                    prefix = body.GetValueOrDefault("prefix", DEF_PREFIX);
-                } catch { }
-            }
-        }
-
-        if (request.HttpMethod == HttpMethod.Get.ToString())
-        {
-            string[] parts = request.Url.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries );
-            if (parts.Length > 1) prefix = parts[1];
-        }
-
-        captureName = createCaptureName(prefix);
-        server.sendJson(response, System.IO.Path.GetFileName(captureName));
-        return true;
+        string path = System.IO.Path.Combine(folder, filename);
+        if (!File.Exists(path)) return null;
+        return File.ReadAllBytes(path);
     }
+
+    private string fitDateString(string d)
+    {
+        if (string.IsNullOrEmpty(d)) return d;
+        if (d.Length > DATE_FORMAT.Length) return d.Substring(0, DATE_FORMAT.Length);
+        if (d.Length < DATE_FORMAT.Length)
+            return d + Enumerable.Range(0, DATE_FORMAT.Length - d.Length).Select(i => "0").Aggregate((a, b) => a + b);
+        return d;
+    }
+
+
+    private string[] onList(string prefix, string from, string to)
+    {
+        string[] files = Directory.GetFiles(folder);
+
+        from = fitDateString(from);
+        to = fitDateString(to);
+
+        List<string> pngs = files.Where((f)=>f.ToLower().EndsWith(".png")).Select((s)=>System.IO.Path.GetFileName(s)).ToList();    // only images
+
+        if (string.IsNullOrEmpty(prefix) && string.IsNullOrEmpty(from) && string.IsNullOrEmpty(to)) return pngs.ToArray();
+
+        List<string> result = new List<string>();
+
+        foreach (string file in pngs)
+        {
+            FileInfo fi = new FileInfo(file);
+            string name = System.IO.Path.GetFileNameWithoutExtension(fi.Name);    // stip postfix
+            string pre  = name.Substring(0, name.Length-DATE_FORMAT.Length);
+            string date = name.Substring(pre.Length);
+
+            bool exclude = false;
+            exclude = exclude || (!string.IsNullOrEmpty(prefix) && (prefix != pre));
+            exclude = exclude || (!string.IsNullOrEmpty(from) && (string.Compare(date, from) < 0));
+            exclude = exclude || (!string.IsNullOrEmpty(to) && (string.Compare(date, to) > 0));
+
+            if (!exclude) result.Add(file);
+        }
+
+        return result.ToArray();
+    }
+
+    private string onCapture(string ? prefix)
+    {
+        captureName = createCaptureName(prefix);
+        return System.IO.Path.GetFileName(captureName);
+    }
+
 
     private void getCameras()
     {
@@ -158,7 +192,7 @@ public partial class MainWindow : Window
     private string createCaptureName(string prefix)
     {
         if (folder == null) return null;    // we can not capture
-        string timestamp = DateTime.Now.ToString("yyyyMMddHHmmss");
+        string timestamp = DateTime.Now.ToString(DATE_FORMAT);
         string pre = prefix ?? DEF_PREFIX;
         string path = System.IO.Path.Combine(folder, $"{pre}{timestamp}.png");
         return path;

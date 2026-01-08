@@ -20,8 +20,6 @@ namespace CamCapture
         private byte[] buffer = new byte[1024];
 
         private Dictionary<string, List<RouteAction>> routes = new Dictionary<string, List<RouteAction>>();
-        private byte[] readBuffer = new byte[1024 * 1024];
-        private byte[] jsonBuffer = new byte[1024 * 1024];
 
         public HTTPServer()
         {
@@ -51,22 +49,7 @@ namespace CamCapture
             return true;
         }
 
-        public string getBody(HttpListenerRequest req)
-        {
-            if (!req.HasEntityBody) return null;
-            int read = req.InputStream.Read(readBuffer, 0, readBuffer.Length);
-            string res = Encoding.UTF8.GetString(readBuffer, 0, read);
-            return res;
-        }
 
-        public void sendJson(HttpListenerResponse res, object o)
-        {
-            res.AddHeader("Content-Type", "application/json");
-            string str = JsonConvert.SerializeObject(o, Formatting.Indented);
-            res.OutputStream.Write(Encoding.UTF8.GetBytes(str));
-            res.StatusCode = (int)HttpStatusCode.OK;
-            res.Close();
-        }
 
         private async Task OnHandleRequest()
         {
