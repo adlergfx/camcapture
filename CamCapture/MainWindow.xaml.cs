@@ -48,7 +48,15 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        server = new  HTTPServer();
+
+        string[] args = Environment.GetCommandLineArgs();
+        string staticPath = "public_html";
+        if (args != null && args.Length > 1)
+        {
+            if (Directory.Exists(staticPath)) staticPath = args[1];
+        }
+
+        server = new  HTTPServer(staticPath);
         rest = new REST(server);
         rest.CaptureFunc = onCapture;
         rest.QueryFunc = onList;
@@ -57,11 +65,11 @@ public partial class MainWindow : Window
         getCameras();
     }
 
-    private byte[] onImage(string filename)
+    private string onImage(string filename)
     {
         string path = System.IO.Path.Combine(folder, filename);
         if (!File.Exists(path)) return null;
-        return File.ReadAllBytes(path);
+        return path;
     }
 
     private string fitDateString(string d)

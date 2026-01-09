@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -22,7 +23,9 @@ namespace CamCapture.core
         /// <param name="prefix">optional prefix where capture should be stored</param>
         /// <returns>filename of image that was captured</returns>
         public delegate string TCaptureFunc(string? prefix);
-        public delegate byte[] TImageFunc(string filename);
+        /// <param name="name">name of the file</param>
+        /// <returns>full path of file if exists or null</returns>
+        public delegate string TImageFunc(string name);
         public delegate string[] TQueryFunc(string? prefix, string ? from, string ? to);
         private TImageFunc imageFunc;
         private TCaptureFunc captureFunc;
@@ -36,6 +39,7 @@ namespace CamCapture.core
         /// <param name="server">Server to use</param>
         public REST(HTTPServer server)
         {
+            this.server = server;
             server.AddRouteAction(HttpMethod.Post, new RouteAction("/capture", onPostCapture ));
             server.AddRouteAction(HttpMethod.Get, new RouteAction("/capture", onGetCapture ));
             server.AddRouteAction(HttpMethod.Get, new RouteAction("/list", onGetList));
@@ -62,18 +66,12 @@ namespace CamCapture.core
 
             string[] parts = request.Url.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length < 2 ) return false;
-            byte[] data = imageFunc(parts[1]);
+            string path = imageFunc(parts[1]);
 
-            if (data == null)
-            {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
                 response.StatusCode = (int)HttpStatusCode.NotFound;
-            }
             else
-            {
-                response.ContentLength64 = data.Length;
-                response.OutputStream.Write(data, 0, data.Length);
-                response.StatusCode = (int)HttpStatusCode.OK;
-            }
+                server.sendFile(path, response); // return value ignored because handled differently here
 
             response.Close();
             return true;
