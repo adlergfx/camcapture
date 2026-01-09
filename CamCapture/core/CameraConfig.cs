@@ -34,15 +34,12 @@ namespace CamCapture.core
 
         public static void ConfigCamera (FilterInfo caminfo, VideoCaptureDevice cam)
         {
-            ConfigMap records = null;
+            ConfigMap records = new ConfigMap();
             if (File.Exists(filename))
             {
                 string json = File.ReadAllText(filename, Encoding.UTF8);
-                records = JsonConvert.DeserializeObject<ConfigMap>(json);
-            }
-            else
-            {
-                records = new ConfigMap();
+                ConfigMap ? rec = JsonConvert.DeserializeObject<ConfigMap>(json);
+                if (rec != null) records = rec;
             }
 
             string name = caminfo.Name;

@@ -1,0 +1,136 @@
+<html>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+        .route {
+            border-radius: 5px;
+            margin: 5px;
+            padding: 2px;
+            display: flex;
+            align-items: center;
+        }
+
+        .route.post {
+            background-color: rgb(220,255,220);
+            border: 1px solid rgb(100,180, 100);
+        }
+        
+        .route.get {
+            background-color: rgb(220,220,255);
+            border: 1px solid rgb(120,120,255);
+        }
+
+        .route .title {
+            font-weight: bold;
+            margin: -2px -2px 2px -2px;
+            padding: 2px;
+        }
+
+        .uri {
+            font-weight: bolder;
+            font-size: large;
+            font-family: monospace;
+            display: flex;
+            margin: 5px;
+            padding: 15px;
+            white-space: nowrap;
+            align-items: center;
+        }
+
+        .method {
+            font-weight: bold;
+            border-radius: 5px;
+            color: white;
+            display: flex;
+            width: 75px;
+            flex-shrink: 0;
+            margin: 5px;
+            padding: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .get > .method {
+            background-color: rgb(120,120,255);
+        }
+        
+        .post > .method {
+            background-color: rgb(100,180, 100);
+        }
+
+        .description {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .description > p {
+            margin: 6px 0 6px 0;
+        }
+
+        code {
+            font-family: monospace;
+            font-size: large;
+        }
+
+    </style>
+    <body>
+        <h2>Available Routes</h2>
+        
+        <div class="route get">
+            <span class="method">GET</span>
+            <span class="uri">{filename}</span>
+            <span class="description">
+                <p>If the server is build with serving static files, it will deliver all files in its working directory.
+                The default working directory is public_html. You can pass a different working directory as first and only
+                command line argument to the application. Be carefull, to set the working directory wrong.</p>
+            </span>
+        </div>
+        <div class="route get">
+            <span class="method">GET</span>
+            <span class="uri">/capture/{prefix?}</span>
+            <span class="description">
+            Will capture a camera image and returns the filename of the capture. 
+            On GET an optinal prefix can be set by route parameter. 
+            </span>
+        </div>
+        <div class="route post">
+            <span class="method">POST</span>
+            <span class="uri">/capture</span>
+            <span class="description">
+            Will capture a camera image and returns the filename of the capture. 
+            The prefix can be set in a json Object of the body in the format <code>{"prefix": "example"}</code>
+            </span>
+        </div>
+        <div class="route get">
+            <span class="method">GET</span>
+            <span class="uri">/list/{prefix?}/{from?}/{to?}</span>
+            <span class="description">
+                <p>Will return a list of available captures. If prefix is set, only matching files wil be returned
+                If from is set only captures equal or later that date are returned. If from and to is set only
+                captures in that interval are returned.</p>
+                <p>Nummerical parameters are interpreted as dates. The first will be from, the second to. The first 
+                non-Numerical Argument is assumed as prefix. </p>
+                <p>Therefor <code>/list/20260101/abs</code> will be interpreted as from beeing <code>20260101</code> with prefix abs. The 
+                route <code>/list/123/456/789</code> will be interpreted with from=123 to=456 and no prefix set!</p>
+                <p>If you want a numerical prefix, include a non numerical character in the prefix.</p>
+            </span>
+        </div>
+        <div class="route get">
+            <span class="method">GET</span>
+            <span class="uri">/image/{capturefile}</span>
+            <span class="description">
+            <p>Will deliver the captured file as image e.g to view it in the browser or Error 404 if file does not exists.</p>
+            <p>Example: <code>/image/capture20260101120000.png</code></p>
+            </span>
+        </div>
+        <!--
+        <div class="route get">
+            <span class="method">GET</span>
+            <span class="uri"></span>
+            <span class="description">
+            </span>
+        </div>
+        //-->
+    </body>
+</html>

@@ -18,7 +18,7 @@ namespace CamCapture.core
 
         public override string ToString() 
         {
-            return $"{cap.FrameSize.Width}x{cap.FrameSize.Height}@{cap.FrameRate}";
+            return $"{cap.FrameSize.Width}x{cap.FrameSize.Height}@{cap.AverageFrameRate}";
         }
 
         public VideoCapabilities Item

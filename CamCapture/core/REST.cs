@@ -1,6 +1,7 @@
 ﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -21,12 +22,14 @@ namespace CamCapture.core
         /// </summary>
         /// <param name="prefix">optional prefix where capture should be stored</param>
         /// <returns>filename of image that was captured</returns>
-        public delegate string TCaptureFunc(string? prefix);
-        public delegate byte[] TImageFunc(string filename);
+        public delegate string ? TCaptureFunc(string? prefix);
+        /// <param name="name">name of the file</param>
+        /// <returns>full path of file if exists or null</returns>
+        public delegate string ? TImageFunc(string name);
         public delegate string[] TQueryFunc(string? prefix, string ? from, string ? to);
-        private TImageFunc imageFunc;
-        private TCaptureFunc captureFunc;
-        private TQueryFunc queryFunc;
+        private TImageFunc ? imageFunc;
+        private TCaptureFunc ? captureFunc;
+        private TQueryFunc ? queryFunc;
         private HTTPServer server;
         private byte[] readBuffer = new byte[1024 * 1024];
 
@@ -36,6 +39,7 @@ namespace CamCapture.core
         /// <param name="server">Server to use</param>
         public REST(HTTPServer server)
         {
+            this.server = server;
             server.AddRouteAction(HttpMethod.Post, new RouteAction("/capture", onPostCapture ));
             server.AddRouteAction(HttpMethod.Get, new RouteAction("/capture", onGetCapture ));
             server.AddRouteAction(HttpMethod.Get, new RouteAction("/list", onGetList));
@@ -60,20 +64,14 @@ namespace CamCapture.core
         {
             if (imageFunc == null) return false;
 
-            string[] parts = request.Url.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            string[] parts = request.Url?.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries) ?? new string[0];
             if (parts.Length < 2 ) return false;
-            byte[] data = imageFunc(parts[1]);
+            string? path = imageFunc(parts[1]);
 
-            if (data == null)
-            {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
                 response.StatusCode = (int)HttpStatusCode.NotFound;
-            }
             else
-            {
-                response.ContentLength64 = data.Length;
-                response.OutputStream.Write(data, 0, data.Length);
-                response.StatusCode = (int)HttpStatusCode.OK;
-            }
+                server.sendFile(path, response); // return value ignored because handled differently here
 
             response.Close();
             return true;
@@ -91,17 +89,17 @@ namespace CamCapture.core
         {
             if (queryFunc == null) return false;
 
-            string[] parts = request.Url.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+            string[] parts = request.Url?.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries) ?? new string[1] { "/" };
 
             // All numbers in the order - Skip 1 because of route
             List<string> numbers = parts.Skip(1).Where((s)=>Regex.IsMatch(s, "^[0-9]+$")).ToList();
             // All prefix candidates
             List<string> remaining = parts.Skip(1).Where((s)=>!numbers.Contains(s)).ToList();
 
-            string prefix = remaining.FirstOrDefault();
-            string from = numbers.FirstOrDefault();
+            string? prefix = remaining.FirstOrDefault();
+            string? from = numbers.FirstOrDefault();
             if (numbers.Count() > 0) numbers.RemoveAt(0);
-            string to = numbers.FirstOrDefault();
+            string? to = numbers.FirstOrDefault();
 
             string[] res = queryFunc(prefix, from, to);
             sendJson(response, res);
@@ -113,21 +111,22 @@ namespace CamCapture.core
         private bool onPostCapture(HttpListenerRequest request, HttpListenerResponse response)
         {
             if (captureFunc == null) return false;
-            string prefix = null;
+            string? prefix = null;
             if ( (request.HttpMethod == HttpMethod.Post.ToString()) && request.HasEntityBody)
             {
-                string bodystr = getBody(request);
+                string? bodystr = getBody(request);
                 if (bodystr != null)
                 {
                     try
                     {
-                        Dictionary<string, string> body = JsonConvert.DeserializeObject<Dictionary<string, string>>(bodystr);
-                        prefix = body.GetValueOrDefault("prefix", null);
+                        Dictionary<string, string> ? body = JsonConvert.DeserializeObject<Dictionary<string, string>>(bodystr);
+                        if (body != null && body.ContainsKey("prefix")) prefix = body["prefix"];
                     } catch { }
                 }
             }
 
-            string file = captureFunc(prefix);
+            string? file = captureFunc(prefix);
+            if (file == null) return false;
             sendJson(response, System.IO.Path.GetFileName(file));
             return true;
         }
@@ -135,15 +134,16 @@ namespace CamCapture.core
         private bool onGetCapture(HttpListenerRequest request, HttpListenerResponse response)
         {
             if (captureFunc == null) return false;
-            string prefix = null;
+            string ? prefix = null;
 
             if (request.HttpMethod == HttpMethod.Get.ToString())
             {
-                string[] parts = request.Url.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries );
+                string[] parts = request.Url?.AbsolutePath.Split('/', StringSplitOptions.RemoveEmptyEntries ) ?? new string[0];
                 if (parts.Length > 1) prefix = parts[1];
             }
 
-            string file = captureFunc(prefix);
+            string? file = captureFunc(prefix);
+            if (file == null) return false;
             sendJson(response, System.IO.Path.GetFileName(file));
             return true;
         }
@@ -167,7 +167,7 @@ namespace CamCapture.core
         /// </summary>
         /// <param name="req">Http Request</param>
         /// <returns>body data as String (most likely json)</returns>
-        private string getBody(HttpListenerRequest req)
+        private string ? getBody(HttpListenerRequest req)
         {
             if (!req.HasEntityBody) return null;
             int read = req.InputStream.Read(readBuffer, 0, readBuffer.Length);

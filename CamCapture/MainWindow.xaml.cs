@@ -28,15 +28,14 @@ namespace CamCapture;
 /// </summary>
 public partial class MainWindow : Window
 {
-    private FilterInfoCollection cameras;
-    private VideoCaptureDevice cam;
-    private String folder;
+    private FilterInfoCollection ? cameras;
+    private VideoCaptureDevice ? cam;
+    private String folder = "";
     //private bool screenshot = false; 
-    private string prefix = null;
     private HTTPServer server;
     private REST rest;
     private bool preview = false;
-    private string captureName;
+    private string? captureName;
 
     private const string SYM_START = "4";
     private const string SYM_STOP  = "<";
@@ -48,7 +47,15 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
-        server = new  HTTPServer();
+
+        string[] args = Environment.GetCommandLineArgs();
+        string staticPath = "public_html";
+        if (args != null && args.Length > 1)
+        {
+            if (Directory.Exists(staticPath)) staticPath = args[1];
+        }
+
+        server = new  HTTPServer(staticPath);
         rest = new REST(server);
         rest.CaptureFunc = onCapture;
         rest.QueryFunc = onList;
@@ -57,14 +64,14 @@ public partial class MainWindow : Window
         getCameras();
     }
 
-    private byte[] onImage(string filename)
+    private string ? onImage(string filename)
     {
         string path = System.IO.Path.Combine(folder, filename);
         if (!File.Exists(path)) return null;
-        return File.ReadAllBytes(path);
+        return path;
     }
 
-    private string fitDateString(string d)
+    private string ? fitDateString(string ? d)
     {
         if (string.IsNullOrEmpty(d)) return d;
         if (d.Length > DATE_FORMAT.Length) return d.Substring(0, DATE_FORMAT.Length);
@@ -74,7 +81,7 @@ public partial class MainWindow : Window
     }
 
 
-    private string[] onList(string prefix, string from, string to)
+    private string[] onList(string ? prefix, string ? from, string ? to)
     {
         string[] files = Directory.GetFiles(folder);
 
@@ -105,7 +112,7 @@ public partial class MainWindow : Window
         return result.ToArray();
     }
 
-    private string onCapture(string ? prefix)
+    private string ? onCapture(string ? prefix)
     {
         captureName = createCaptureName(prefix);
         return System.IO.Path.GetFileName(captureName);
@@ -124,6 +131,7 @@ public partial class MainWindow : Window
 
     private void btnPlay_Click(object sender, RoutedEventArgs e)
     {
+        if (cameras == null) return;
         // if null we will switch to capturing
         bool isCapturing = cam == null;
 
@@ -146,7 +154,8 @@ public partial class MainWindow : Window
             btnShot.IsEnabled = Directory.Exists(folder);
             FilterInfo vid = cameras[cbCams.SelectedIndex];
             cam = new VideoCaptureDevice(vid.MonikerString); // get First device
-            VideoCapabilities res = (cbResolution.SelectedItem as VideoCap).Item;
+            VideoCapabilities ? res = (cbResolution.SelectedItem as VideoCap)?.Item;
+
 
             CameraConfig.ConfigCamera(cameras[cbCams.SelectedIndex], cam);
 
@@ -183,13 +192,13 @@ public partial class MainWindow : Window
         {
         }
 
-        if (!HasCapture) return;
+        if (!HasCapture || (captureName == null)) return;   // HasCapture is same, but try to avoid compiler warning
         bmp.Save(captureName);
         bmp.Dispose();
         captureName = null;
     }
 
-    private string createCaptureName(string prefix)
+    private string ? createCaptureName(string? prefix)
     {
         if (folder == null) return null;    // we can not capture
         string timestamp = DateTime.Now.ToString(DATE_FORMAT);
@@ -230,7 +239,7 @@ public partial class MainWindow : Window
         btnServer.Content = server.IsConnected?SYM_STOP:SYM_START;
     }
 
-    private void tbServer_TextChanged(object sender, TextChangedEventArgs e)
+    private void tbServer_TextChanged(object? sender, TextChangedEventArgs? e)
     {
         if (btnServer == null) return;
         try
@@ -253,7 +262,7 @@ public partial class MainWindow : Window
     {
         btnPlay.IsEnabled = cbCams.SelectedIndex >= 0;
 
-        if (cbCams.SelectedIndex < 0) return;
+        if (cbCams.SelectedIndex < 0 || cameras == null) return;
         FilterInfo vid = cameras[cbCams.SelectedIndex];
 
         // i am not using the member here because i only try to get 
@@ -280,7 +289,7 @@ public partial class MainWindow : Window
 
     private void btnReload_Click(object sender, RoutedEventArgs e)
     {
-        if ((cam == null) || (cbCams.SelectedIndex < 0)) return;
+        if ((cam == null) || (cbCams.SelectedIndex < 0) || (cameras == null)) return;
         CameraConfig.ConfigCamera(cameras[cbCams.SelectedIndex], cam);
     }
 
