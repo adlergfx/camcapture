@@ -15,6 +15,7 @@
 
     <ItemGroup>
       <PackageReference Include="AForge.Video.DirectShow" Version="2.2.5" />
+      <PackageReference Include="Extended.Wpf.Toolkit" Version="5.0.0" />
       <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
       <PackageReference Include="System.Drawing.Common" Version="10.0.1" />
     </ItemGroup>

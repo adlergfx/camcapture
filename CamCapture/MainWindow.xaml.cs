@@ -2,12 +2,14 @@
 using CamCapture.core;
 using Microsoft.Win32;
 using Newtonsoft.Json;
+using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Windows;
@@ -26,8 +28,9 @@ namespace CamCapture;
 /// <summary>
 /// Interaction logic for MainWindow.xaml
 /// </summary>
-public partial class MainWindow : Window
+public partial class MainWindow : Window, INotifyPropertyChanged
 {
+    public event PropertyChangedEventHandler ? PropertyChanged;
     private FilterInfoCollection ? cameras;
     private VideoCaptureDevice ? cam;
     private String folder = "";
@@ -46,6 +49,7 @@ public partial class MainWindow : Window
 
     public MainWindow()
     {
+        DataContext = this;
         InitializeComponent();
 
         string[] args = Environment.GetCommandLineArgs();
@@ -64,11 +68,52 @@ public partial class MainWindow : Window
         getCameras();
     }
 
+    protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+    {
+        PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
     private string ? onImage(string filename)
     {
         string path = System.IO.Path.Combine(folder, filename);
         if (!File.Exists(path)) return null;
         return path;
+    }
+
+    private bool HasCapture
+    {
+        get => captureName != null;
+    }
+
+    public bool IsCameraDisabled
+    {
+        get => !IsCameraEnabled;
+    }
+
+    public bool IsCameraEnabled
+    {
+        get => cam != null;
+    }
+
+    public bool CanTakeImage
+    {
+        get => IsCameraEnabled && Directory.Exists(folder);
+    }
+
+
+    public string Folder
+    {
+        get => folder;
+        set {
+            folder = value;
+            OnPropertyChanged(nameof(CanTakeImage));
+        }
+    }
+
+    public bool Preview
+    {
+        get => preview;
+        set => preview = value;
     }
 
     private string ? fitDateString(string ? d)
@@ -83,7 +128,7 @@ public partial class MainWindow : Window
 
     private string[] onList(string ? prefix, string ? from, string ? to)
     {
-        string[] files = Directory.GetFiles(folder);
+        string[] files = Directory.GetFiles(Folder);
 
         from = fitDateString(from);
         to = fitDateString(to);
@@ -129,46 +174,51 @@ public partial class MainWindow : Window
         }
     }
 
+#pragma warning disable 8602  // Dereference NULL
+    private void StartCamera()
+    {
+        if (IsCameraEnabled && cameras != null && cbCams.SelectedIndex >= 0) return;
+        FilterInfo vid = cameras[cbCams.SelectedIndex];
+        cam = new VideoCaptureDevice(vid.MonikerString); // get First device
+        VideoCapabilities ? res = (cbResolution.SelectedItem as VideoCap)?.Item;
+
+        CameraConfig.ConfigCamera(cameras[cbCams.SelectedIndex], cam);
+
+        cam.VideoResolution = res;
+        cam.NewFrame += Cam_NewFrame;
+        cam.Start();
+    }
+
+    private void StopCamera()
+    {
+        if (!IsCameraEnabled) return;
+        cam.NewFrame -= Cam_NewFrame;
+        cam.SignalToStop();
+        cam = null;
+    }
+#pragma warning restore
+
     private void btnPlay_Click(object sender, RoutedEventArgs e)
     {
         if (cameras == null) return;
         // if null we will switch to capturing
-        bool isCapturing = cam == null;
 
-        btnShot.IsEnabled = isCapturing;
-        tbFolder.IsEnabled = !isCapturing;
-        btnBrowse.IsEnabled = !isCapturing;
-        cbResolution.IsEnabled = !isCapturing;
-        cbCams.IsEnabled = !isCapturing;
-        image.Visibility = isCapturing ? Visibility.Visible : Visibility.Hidden;
-        btnPlay.Content = !isCapturing?SYM_START:SYM_STOP;
-
-        if (cam != null)
-        {
-            cam.NewFrame -= Cam_NewFrame;
-            cam.SignalToStop();
-            cam = null;
-        }
+        if (IsCameraEnabled)
+            StopCamera();
         else
-        {
-            btnShot.IsEnabled = Directory.Exists(folder);
-            FilterInfo vid = cameras[cbCams.SelectedIndex];
-            cam = new VideoCaptureDevice(vid.MonikerString); // get First device
-            VideoCapabilities ? res = (cbResolution.SelectedItem as VideoCap)?.Item;
+            StartCamera();
 
-
-            CameraConfig.ConfigCamera(cameras[cbCams.SelectedIndex], cam);
-
-            cam.VideoResolution = res;
-            cam.NewFrame += Cam_NewFrame;
-            cam.Start();
-        }
+        image.Visibility = IsCameraEnabled ? Visibility.Visible : Visibility.Hidden;
+        btnPlay.Content =  IsCameraEnabled ? SYM_STOP:SYM_START;
+        OnPropertyChanged(nameof(IsCameraEnabled));
+        OnPropertyChanged(nameof(IsCameraDisabled));
+        OnPropertyChanged(nameof(CanTakeImage));
     }
 
 
     private void Cam_NewFrame(object sender, AForge.Video.NewFrameEventArgs eventArgs)
     {
-        if (!HasCapture && !preview) return;
+        if (!HasCapture && !Preview) return;
 
         Bitmap bmp = new Bitmap(eventArgs.Frame);
         BitmapImage bi = new BitmapImage();
@@ -180,20 +230,17 @@ public partial class MainWindow : Window
         bi.EndInit();
         bi.Freeze();
 
-        try
+        Dispatcher.Invoke(() =>
         {
-            Dispatcher.Invoke(() =>
-            {
-                if (image == null) return; // which can be in bad timings while closing applications
-                image.Visibility = Visibility.Visible; 
-                image.Source = bi; 
-            });
-        } catch
-        {
-        }
+            if (image == null) return; // which can be in bad timings while closing applications
+            image.Visibility = Visibility.Visible; 
+            image.Source = bi; 
+        });
 
-        if (!HasCapture || (captureName == null)) return;   // HasCapture is same, but try to avoid compiler warning
+        if (!HasCapture) return;   // HasCapture is same
+#pragma warning disable 8604
         bmp.Save(captureName);
+#pragma warning restore
         bmp.Dispose();
         captureName = null;
     }
@@ -207,10 +254,6 @@ public partial class MainWindow : Window
         return path;
     }
 
-    private bool HasCapture
-    {
-        get => captureName != null;
-    }
 
     private void onBrowseDirectory(object sender, RoutedEventArgs e)
     {
@@ -277,14 +320,6 @@ public partial class MainWindow : Window
         }
         cbResolution.SelectedIndex = 0;
 
-
-    
-
-    }
-
-    private void onPreviewChanged(object sender, RoutedEventArgs e)
-    {
-        preview = cbPreview.IsChecked ?? false;
     }
 
     private void btnReload_Click(object sender, RoutedEventArgs e)
@@ -293,8 +328,9 @@ public partial class MainWindow : Window
         CameraConfig.ConfigCamera(cameras[cbCams.SelectedIndex], cam);
     }
 
-    private void tbFolder_TextChanged(object sender, TextChangedEventArgs e)
+    private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
     {
-        folder = tbFolder.Text;
+        StopCamera();
+        server.Stop();
     }
 }

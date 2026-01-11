@@ -3,9 +3,10 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:xctk="http://schemas.xceed.com/wpf/xaml/toolkit"
         xmlns:local="clr-namespace:CamCapture"
         mc:Ignorable="d"
-        Title="Video Capture" Height="514" Width="473">
+        Title="Video Capture" Height="514" Width="473" Closing="Window_Closing">
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="113"/>
@@ -23,8 +24,8 @@
                 </TransformGroup>
             </GroupBox.RenderTransform>
             <Grid>
-                <TextBox x:Name="tbFolder" Margin="7,12,67,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="23" ToolTip="Directory to store images" TextChanged="tbFolder_TextChanged"/>
-                <Button x:Name="btnBrowse" Content="..." Margin="0,12,9,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="50" Height="23" Click="onBrowseDirectory" ToolTip="Browse Directories"/>
+                <TextBox x:Name="tbFolder" Margin="7,12,67,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="23" ToolTip="Directory to store images" Text="{Binding Folder}" IsEnabled="{Binding IsCameraDisabled}"/>
+                <Button x:Name="btnBrowse" Content="..." Margin="0,12,9,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="50" Height="23" Click="onBrowseDirectory" ToolTip="Browse Directories" IsEnabled="{Binding IsCameraDisabled}"/>
                 <TextBox x:Name="tbServer" Margin="58,0,66,8" TextWrapping="Wrap" Height="23" VerticalAlignment="Bottom" TextChanged="tbServer_TextChanged" Text="8083" TextAlignment="Center" ToolTip="Select Port where Server will be bound"/>
                 <Button x:Name="btnServer" Content="4" Margin="0,0,8,8" Height="23" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="50" Click="onServerStart" FontFamily="Webdings" IsEnabled="False" ToolTip="Start/Stop Server"/>
                 <Label Content="Port" Margin="7,43,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="32"/>
@@ -33,15 +34,16 @@
         <Image x:Name="image" Margin="10,7,10,13" Grid.Row="2"/>
         <GroupBox x:Name="camGroup" Header="Camera" Height="86" VerticalAlignment="Center" Grid.Row="1">
             <Grid>
-                <ComboBox x:Name="cbCams" Margin="31,7,197,0" VerticalAlignment="Top" Height="23" SelectionChanged="cbCams_SelectionChanged" Grid.RowSpan="1" ToolTip="Select Camera"/>
-                <ComboBox x:Name="cbResolution" Margin="0,7,72,0" VerticalAlignment="Top" Height="23" Grid.RowSpan="1" HorizontalAlignment="Right" Width="120" ToolTip="Select Camera Resolution and Rate"/>
+                <ComboBox x:Name="cbCams" Margin="31,7,197,0" VerticalAlignment="Top" Height="23" SelectionChanged="cbCams_SelectionChanged" Grid.RowSpan="1" ToolTip="Select Camera" IsEnabled="{Binding IsCameraDisabled}"/>
+                <ComboBox x:Name="cbResolution" Margin="0,7,72,0" VerticalAlignment="Top" Height="23" Grid.RowSpan="1" HorizontalAlignment="Right" Width="120" ToolTip="Select Camera Resolution and Rate" IsEnabled="{Binding IsCameraDisabled}"/>
                 <Button x:Name="btnPlay" Content="4" Margin="0,7,41,0" VerticalAlignment="Top" Click="btnPlay_Click" FontFamily="Webdings" Height="23" IsEnabled="False" Grid.RowSpan="1" HorizontalAlignment="Right" Width="26" ToolTip="Start / Stop Camera"/>
-                <Button x:Name="btnShot" Content="·" Margin="0,7,8,0" VerticalAlignment="Top" Click="btnShot_Click" Height="23" FontFamily="Webdings" IsEnabled="False" Grid.RowSpan="1" HorizontalAlignment="Right" Width="28" ToolTip="Take a Screenshot"/>
-                <CheckBox x:Name="cbPreview" Content="show Video" Margin="0,38,9,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="82" Checked="onPreviewChanged" Unchecked="onPreviewChanged" ToolTip="Show Camera image continuously"/>
+                <Button x:Name="btnShot" Content="·" Margin="0,7,8,0" VerticalAlignment="Top" Click="btnShot_Click" Height="23" FontFamily="Webdings" IsEnabled="{Binding CanTakeImage}" Grid.RowSpan="1" HorizontalAlignment="Right" Width="28" ToolTip="Take a Screenshot"/>
+                <CheckBox x:Name="cbPreview" Content="show Video" Margin="0,38,9,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="82" ToolTip="Show Camera image continuously" IsChecked="{Binding Preview}"/>
                 <Button x:Name="btnReload" Content="q" HorizontalAlignment="Left" Margin="0,7,0,0" VerticalAlignment="Top" Height="23" FontFamily="Webdings" Width="26" Click="btnReload_Click" ToolTip="Reload Camera Config"/>
             </Grid>
         </GroupBox>
         <StatusBar x:Name="sbStatus" Grid.Row="3"/>
+        <Button x:Name="button" Content="Button" HorizontalAlignment="Left" Height="0" Margin="620,112,0,0" VerticalAlignment="Top" Width="0"/>
 
     </Grid>
 </Window>
