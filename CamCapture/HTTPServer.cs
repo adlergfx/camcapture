@@ -134,7 +134,7 @@ namespace CamCapture
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+                Log.Error("Failed to Start Server - maybe missing permissions?");
                 Stop();
             }
         }

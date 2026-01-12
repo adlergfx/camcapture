@@ -8,7 +8,7 @@ using System.Windows.Controls;
 
 namespace CamCapture.core
 {
-    internal class VideoCap
+    internal class VideoCap: IVideoCap
     {
         private VideoCapabilities cap;
         public VideoCap(VideoCapabilities cap)

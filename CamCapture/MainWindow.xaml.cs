@@ -1,27 +1,14 @@
-﻿using AForge.Video.DirectShow;
+﻿//using AForge.Video.DirectShow;
 using CamCapture.core;
 using Microsoft.Win32;
-using Newtonsoft.Json;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
-using System.Net;
-using System.Net.Http;
-using System.Net.Sockets;
 using System.Runtime.CompilerServices;
-using System.Text;
-using System.Text.Json.Serialization;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Markup.Localizer;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 namespace CamCapture;
 
@@ -31,10 +18,8 @@ namespace CamCapture;
 public partial class MainWindow : Window, INotifyPropertyChanged
 {
     public event PropertyChangedEventHandler ? PropertyChanged;
-    private FilterInfoCollection ? cameras;
-    private VideoCaptureDevice ? cam;
-    private String folder = "";
-    //private bool screenshot = false; 
+    private ICameraManager cameraManager;
+    private String folder = ""; 
     private HTTPServer server;
     private REST rest;
     private bool preview = false;
@@ -49,7 +34,12 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     public MainWindow()
     {
+        Log.Create("camcapturelog.txt");
+
         DataContext = this;
+        cameraManager = new DSCameraManager();
+        cameraManager.SetFrameListener(CameraManager_OnFrame);
+
         InitializeComponent();
 
         string[] args = Environment.GetCommandLineArgs();
@@ -66,7 +56,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         rest.ImageFunc = onImage;
         tbServer_TextChanged(null, null);
         getCameras();
+
+        Log.Info("initialized");
     }
+
+    
 
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
@@ -92,7 +86,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     public bool IsCameraEnabled
     {
-        get => cam != null;
+        get => cameraManager.IsActive;
     }
 
     public bool CanTakeImage
@@ -107,6 +101,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         set {
             folder = value;
             OnPropertyChanged(nameof(CanTakeImage));
+            OnPropertyChanged(nameof(Folder));
         }
     }
 
@@ -166,43 +161,34 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void getCameras()
     {
-        cameras = new FilterInfoCollection(FilterCategory.VideoInputDevice);
         cbCams.Items.Clear();
-        foreach (FilterInfo cam in cameras)
+        foreach (string cam in cameraManager.Cameras)
         {
-            cbCams.Items.Add(cam.Name);
+            cbCams.Items.Add(cam);
         }
     }
 
 #pragma warning disable 8602  // Dereference NULL
     private void StartCamera()
     {
-        if (IsCameraEnabled && cameras != null && cbCams.SelectedIndex >= 0) return;
-        FilterInfo vid = cameras[cbCams.SelectedIndex];
-        cam = new VideoCaptureDevice(vid.MonikerString); // get First device
-        VideoCapabilities ? res = (cbResolution.SelectedItem as VideoCap)?.Item;
-
-        CameraConfig.ConfigCamera(cameras[cbCams.SelectedIndex], cam);
-
-        cam.VideoResolution = res;
-        cam.NewFrame += Cam_NewFrame;
-        cam.Start();
+        if (IsCameraEnabled && cbCams.SelectedIndex >= 0) return;
+        cameraManager.Start(cbCams.SelectedIndex, cbResolution.SelectedItem as IVideoCap);
+        OnPropertyChanged(nameof(IsCameraDisabled));
+        OnPropertyChanged(nameof(IsCameraEnabled));
+        OnPropertyChanged(nameof(CanTakeImage));
     }
 
     private void StopCamera()
     {
-        if (!IsCameraEnabled) return;
-        cam.NewFrame -= Cam_NewFrame;
-        cam.SignalToStop();
-        cam = null;
+        cameraManager.Stop();
+        OnPropertyChanged(nameof(IsCameraDisabled));
+        OnPropertyChanged(nameof(IsCameraEnabled));
+        OnPropertyChanged(nameof(CanTakeImage));
     }
 #pragma warning restore
 
     private void btnPlay_Click(object sender, RoutedEventArgs e)
     {
-        if (cameras == null) return;
-        // if null we will switch to capturing
-
         if (IsCameraEnabled)
             StopCamera();
         else
@@ -215,26 +201,15 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         OnPropertyChanged(nameof(CanTakeImage));
     }
 
-
-    private void Cam_NewFrame(object sender, AForge.Video.NewFrameEventArgs eventArgs)
+    private void CameraManager_OnFrame(Bitmap bmp, BitmapImage bi)
     {
         if (!HasCapture && !Preview) return;
-
-        Bitmap bmp = new Bitmap(eventArgs.Frame);
-        BitmapImage bi = new BitmapImage();
-        bi.BeginInit();
-            MemoryStream ms = new MemoryStream();
-            bmp.Save(ms, ImageFormat.Bmp);
-            ms.Seek(0, SeekOrigin.Begin);
-            bi.StreamSource = ms;
-        bi.EndInit();
-        bi.Freeze();
 
         Dispatcher.Invoke(() =>
         {
             if (image == null) return; // which can be in bad timings while closing applications
-            image.Visibility = Visibility.Visible; 
-            image.Source = bi; 
+            image.Visibility = Visibility.Visible;
+            image.Source = bi;
         });
 
         if (!HasCapture) return;   // HasCapture is same
@@ -244,6 +219,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         bmp.Dispose();
         captureName = null;
     }
+
 
     private string ? createCaptureName(string? prefix)
     {
@@ -261,7 +237,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         bool? res = dlg.ShowDialog();
         if (res.HasValue && res.Value)
         {
-            tbFolder.Text = dlg.FolderName;
+            Folder = dlg.FolderName;
         }
     }
 
@@ -305,18 +281,13 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         btnPlay.IsEnabled = cbCams.SelectedIndex >= 0;
 
-        if (cbCams.SelectedIndex < 0 || cameras == null) return;
-        FilterInfo vid = cameras[cbCams.SelectedIndex];
+        if (cbCams.SelectedIndex < 0) return;
 
-        // i am not using the member here because i only try to get 
-        // camera properties and not aquire the camera
-        VideoCaptureDevice cam = new VideoCaptureDevice(vid.MonikerString); // get First device
-
-        VideoCapabilities[] vcap = cam.VideoCapabilities;
+        List<IVideoCap> caps = cameraManager.getResolutions(cbCams.SelectedIndex);
         cbResolution.Items.Clear();
-        foreach (VideoCapabilities cap in vcap)
+        foreach (IVideoCap cap in caps)
         {
-            cbResolution.Items.Add( new VideoCap(cap) );
+            cbResolution.Items.Add( cap );
         }
         cbResolution.SelectedIndex = 0;
 
@@ -324,8 +295,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void btnReload_Click(object sender, RoutedEventArgs e)
     {
-        if ((cam == null) || (cbCams.SelectedIndex < 0) || (cameras == null)) return;
-        CameraConfig.ConfigCamera(cameras[cbCams.SelectedIndex], cam);
+        cameraManager.UpdateConfig();
     }
 
     private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
