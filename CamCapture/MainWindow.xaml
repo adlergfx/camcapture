@@ -42,7 +42,9 @@
                 <Button x:Name="btnReload" Content="q" HorizontalAlignment="Left" Margin="0,7,0,0" VerticalAlignment="Top" Height="23" FontFamily="Webdings" Width="26" Click="btnReload_Click" ToolTip="Reload Camera Config" IsEnabled="{Binding IsCameraEnabled}"/>
             </Grid>
         </GroupBox>
-        <StatusBar x:Name="sbStatus" Grid.Row="3"/>
+        <StatusBar x:Name="sbStatus" Grid.Row="3">
+            <ListBoxItem x:Name="sbStatusMessage" Content=""/>
+        </StatusBar>
         <Button x:Name="button" Content="Button" HorizontalAlignment="Left" Height="0" Margin="620,112,0,0" VerticalAlignment="Top" Width="0"/>
 
     </Grid>

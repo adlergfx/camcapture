@@ -15,6 +15,8 @@ namespace CamCapture.core
         private LogLevel logLevel = LogLevel.Info;
         private string ? logFile;
 
+        public delegate void LogHandler(LogLevel level, string message);
+        public event LogHandler OnLogEvent = delegate { };
 
         public enum LogLevel
         {
@@ -48,10 +50,11 @@ namespace CamCapture.core
         private Log Write(LogLevel lvl, string message)
         {
             if (lvl < logLevel) return this;
-
+            OnLogEvent(lvl, message);
             string msg = $"{lvl.ToString()}: {message}";
 
             System.Diagnostics.Debug.WriteLine(msg);
+            
 
             
 

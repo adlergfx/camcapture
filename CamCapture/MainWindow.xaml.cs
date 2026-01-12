@@ -35,6 +35,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     public MainWindow()
     {
         Log.Create("camcapturelog.txt");
+        Log.Get().OnLogEvent += MainWindow_OnLogEvent;
 
         DataContext = this;
         cameraManager = new DSCameraManager();
@@ -60,7 +61,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         Log.Info("initialized");
     }
 
-    
+    private void MainWindow_OnLogEvent(Log.LogLevel level, string message)
+    {
+        if (level == Log.LogLevel.Error)
+            sbStatusMessage.Content = message;
+    }
 
     protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
     {
