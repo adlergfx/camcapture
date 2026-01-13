@@ -79,15 +79,21 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         return path;
     }
 
+    public bool IsFolderEditable
+    {
+        get => !IsCameraEnabled && !(server?.IsConnected ?? false);
+    }
+
     private bool HasCapture
     {
         get => captureName != null;
     }
 
+    /*
     public bool IsCameraDisabled
     {
         get => !IsCameraEnabled;
-    }
+    }*/
 
     public bool IsCameraEnabled
     {
@@ -128,7 +134,17 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private string[] onList(string ? prefix, string ? from, string ? to)
     {
-        string[] files = Directory.GetFiles(Folder);
+        string[] files = [];
+        
+        try
+        {
+            files = Directory.GetFiles(Folder);
+        } catch ( Exception e )
+        {
+            Log.Error("Capture directory invalid");
+            return files;
+        }
+        
 
         from = fitDateString(from);
         to = fitDateString(to);
@@ -159,6 +175,8 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private string ? onCapture(string ? prefix)
     {
+        if (!CanTakeImage) return null;
+
         captureName = createCaptureName(prefix);
         return System.IO.Path.GetFileName(captureName);
     }
@@ -178,17 +196,22 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     {
         if (IsCameraEnabled && cbCams.SelectedIndex >= 0) return;
         cameraManager.Start(cbCams.SelectedIndex, cbResolution.SelectedItem as IVideoCap);
-        OnPropertyChanged(nameof(IsCameraDisabled));
+        OnPropertyChanged(nameof(IsFolderEditable));
         OnPropertyChanged(nameof(IsCameraEnabled));
         OnPropertyChanged(nameof(CanTakeImage));
+        image.Visibility = Visibility.Visible;
+        btnPlay.Content = SYM_STOP;
+
     }
 
     private void StopCamera()
     {
         cameraManager.Stop();
-        OnPropertyChanged(nameof(IsCameraDisabled));
+        OnPropertyChanged(nameof(IsFolderEditable));
         OnPropertyChanged(nameof(IsCameraEnabled));
         OnPropertyChanged(nameof(CanTakeImage));
+        image.Visibility = Visibility.Hidden;
+        btnPlay.Content = SYM_START;
     }
 #pragma warning restore
 
@@ -198,12 +221,6 @@ public partial class MainWindow : Window, INotifyPropertyChanged
             StopCamera();
         else
             StartCamera();
-
-        image.Visibility = IsCameraEnabled ? Visibility.Visible : Visibility.Hidden;
-        btnPlay.Content =  IsCameraEnabled ? SYM_STOP:SYM_START;
-        OnPropertyChanged(nameof(IsCameraEnabled));
-        OnPropertyChanged(nameof(IsCameraDisabled));
-        OnPropertyChanged(nameof(CanTakeImage));
     }
 
     private void CameraManager_OnFrame(Bitmap bmp, BitmapImage bi)
@@ -226,6 +243,11 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     }
 
 
+    /// <summary>
+    /// Will create a capture name. Capturing is only possible if a valid folder exists
+    /// </summary>
+    /// <param name="prefix">optional file prefix</param>
+    /// <returns>absolut path where file should be stored</returns>
     private string ? createCaptureName(string? prefix)
     {
         if (folder == null) return null;    // we can not capture
@@ -261,6 +283,7 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         }
         tbServer.IsEnabled = !server.IsConnected;
         btnServer.Content = server.IsConnected?SYM_STOP:SYM_START;
+        OnPropertyChanged(nameof(IsFolderEditable));
     }
 
     private void tbServer_TextChanged(object? sender, TextChangedEventArgs? e)

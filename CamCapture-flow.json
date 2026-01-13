@@ -1,0 +1,672 @@
+[
+    {
+        "id": "54231982a4bda1ef",
+        "type": "tab",
+        "label": "Flow 4",
+        "disabled": false,
+        "info": "",
+        "env": []
+    },
+    {
+        "id": "15c771b6b779ae7a",
+        "type": "ui-template",
+        "z": "54231982a4bda1ef",
+        "group": "4b3d8d7c43c02a11",
+        "page": "",
+        "ui": "",
+        "name": "CaptureImage",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "head": "",
+        "format": "<template>\n    <div>\n        <img class=\"capture\" :src=\"msg.payload\">\n    </div>\n</template>\n\n<style>\n    /* define any styles here - supports raw CSS */\n    img.capture {\n       max-width: 100%;\n       display: block;\n       height: auto;\n    }\n</style>",
+        "storeOutMessages": true,
+        "passthru": true,
+        "resendOnRefresh": true,
+        "templateScope": "local",
+        "className": "",
+        "x": 820,
+        "y": 380,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "ab28be8d773d9668",
+        "type": "ui-button",
+        "z": "54231982a4bda1ef",
+        "group": "c54d9828c05ec1d5",
+        "name": "",
+        "label": "Capture",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "capture",
+        "payloadType": "str",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 340,
+        "y": 340,
+        "wires": [
+            [
+                "608e1de24b3aeb3a"
+            ]
+        ]
+    },
+    {
+        "id": "608e1de24b3aeb3a",
+        "type": "http request",
+        "z": "54231982a4bda1ef",
+        "name": "",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "http://cnc_isel:8083/capture/node-red",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 570,
+        "y": 340,
+        "wires": [
+            [
+                "15c771b6b779ae7a",
+                "45477b45c9d576c5"
+            ]
+        ]
+    },
+    {
+        "id": "45477b45c9d576c5",
+        "type": "function",
+        "z": "54231982a4bda1ef",
+        "name": "StoreLast",
+        "func": "flow.set(\"image\", msg.payload);\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 800,
+        "y": 320,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "200cf36572af34a0",
+        "type": "inject",
+        "z": "54231982a4bda1ef",
+        "d": true,
+        "name": "[debug] recall",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "image",
+        "payloadType": "flow",
+        "x": 270,
+        "y": 560,
+        "wires": [
+            [
+                "738933bdb3d83f00"
+            ]
+        ]
+    },
+    {
+        "id": "738933bdb3d83f00",
+        "type": "json",
+        "z": "54231982a4bda1ef",
+        "d": true,
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 470,
+        "y": 560,
+        "wires": [
+            [
+                "e7aa6da6f74552b0"
+            ]
+        ]
+    },
+    {
+        "id": "e7aa6da6f74552b0",
+        "type": "function",
+        "z": "54231982a4bda1ef",
+        "name": "toUrl",
+        "func": "msg.payload = \"http://cnc_isel:8083/image/\" + msg.payload;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 870,
+        "y": 500,
+        "wires": [
+            [
+                "15c771b6b779ae7a"
+            ]
+        ]
+    },
+    {
+        "id": "ddb60a9512fdc57e",
+        "type": "inject",
+        "z": "54231982a4bda1ef",
+        "name": "",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "1",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "x": 210,
+        "y": 680,
+        "wires": [
+            [
+                "ddc2b3b9e7368755"
+            ]
+        ]
+    },
+    {
+        "id": "ddc2b3b9e7368755",
+        "type": "http request",
+        "z": "54231982a4bda1ef",
+        "name": "",
+        "method": "GET",
+        "ret": "txt",
+        "paytoqs": "ignore",
+        "url": "http://cnc_isel:8083/list/node-red",
+        "tls": "",
+        "persist": false,
+        "proxy": "",
+        "insecureHTTPParser": false,
+        "authType": "",
+        "senderr": false,
+        "headers": [],
+        "x": 370,
+        "y": 680,
+        "wires": [
+            [
+                "f8e49a5d052fbf18"
+            ]
+        ]
+    },
+    {
+        "id": "f8e49a5d052fbf18",
+        "type": "json",
+        "z": "54231982a4bda1ef",
+        "name": "",
+        "property": "payload",
+        "action": "",
+        "pretty": false,
+        "x": 530,
+        "y": 680,
+        "wires": [
+            [
+                "2cb85f93c5ec3a18"
+            ]
+        ]
+    },
+    {
+        "id": "2cb85f93c5ec3a18",
+        "type": "function",
+        "z": "54231982a4bda1ef",
+        "name": "refresh",
+        "func": "let last = msg.payload.pop();\n\nif (last == flow.get(\"image\"))\n    return;\n\nmsg.payload = last;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 700,
+        "y": 680,
+        "wires": [
+            [
+                "e7aa6da6f74552b0"
+            ]
+        ]
+    },
+    {
+        "id": "4655e9a29c1cd09b",
+        "type": "OpcUa-Client",
+        "z": "54231982a4bda1ef",
+        "endpoint": "c0252172b2255454",
+        "action": "readmultiple",
+        "deadbandtype": "a",
+        "deadbandvalue": 1,
+        "time": "1",
+        "timeUnit": "s",
+        "certificate": "n",
+        "localfile": "",
+        "localkeyfile": "",
+        "securitymode": "None",
+        "securitypolicy": "None",
+        "useTransport": false,
+        "maxChunkCount": 1,
+        "maxMessageSize": 8192,
+        "receiveBufferSize": 8192,
+        "sendBufferSize": 8192,
+        "setstatusandtime": false,
+        "keepsessionalive": false,
+        "name": "",
+        "applicationName": "",
+        "applicationUri": "",
+        "x": 240,
+        "y": 440,
+        "wires": [
+            [],
+            [],
+            [
+                "f39c17e593c87a3c"
+            ]
+        ]
+    },
+    {
+        "id": "cd78b6ea0801a133",
+        "type": "inject",
+        "z": "54231982a4bda1ef",
+        "name": "",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            },
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "1",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "readmultiple",
+        "payload": "[\"ns=3;s=\\\"Waage\\\"\",\"ns=3;s=\\\"-BG03\\\"\"]",
+        "payloadType": "json",
+        "x": 70,
+        "y": 440,
+        "wires": [
+            [
+                "4655e9a29c1cd09b"
+            ]
+        ]
+    },
+    {
+        "id": "f39c17e593c87a3c",
+        "type": "function",
+        "z": "54231982a4bda1ef",
+        "name": "SensorCapture",
+        "func": "const data = msg.payload;\nconst Waage = data[0].value.value;\nconst BG03  = data[1].value.value;\n\n// If BG03 WAS false and becomes true, and Waage is than > 50\n// we can trigger\nconst oldBG03 = flow.get(\"BG03\");\nflow.set(\"BG03\", BG03);\n\n// We need to store first value\nif (oldBG03 === undefined) return;\n\n\nif (oldBG03 == BG03 || !BG03 || Waage < 50) return;\n\nmsg.payload = \"capture\";\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 440,
+        "y": 440,
+        "wires": [
+            [
+                "608e1de24b3aeb3a"
+            ]
+        ],
+        "info": "Auslösen des Sensors, wenn der Hebearm an der Baugruppe 30\r\ndie obere Endlage (BG03) erreicht hat und ein Gewicht auf \r\nder Waage liegt"
+    },
+    {
+        "id": "4ef3f55d19bb4167",
+        "type": "debug",
+        "z": "54231982a4bda1ef",
+        "name": "debug 8",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1020,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "id": "a9442c924b415fd3",
+        "type": "ui-button",
+        "z": "54231982a4bda1ef",
+        "group": "c54d9828c05ec1d5",
+        "name": "Start Magazin",
+        "label": "Start Magazin",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "emulateClick": false,
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "className": "",
+        "icon": "",
+        "iconPosition": "left",
+        "payload": "true",
+        "payloadType": "bool",
+        "topic": "topic",
+        "topicType": "msg",
+        "buttonColor": "",
+        "textColor": "",
+        "iconColor": "",
+        "enableClick": true,
+        "enablePointerdown": false,
+        "pointerdownPayload": "",
+        "pointerdownPayloadType": "str",
+        "enablePointerup": false,
+        "pointerupPayload": "",
+        "pointerupPayloadType": "str",
+        "x": 320,
+        "y": 220,
+        "wires": [
+            [
+                "6853edeb27d61bb6"
+            ]
+        ]
+    },
+    {
+        "id": "a87104a88432275a",
+        "type": "OpcUa-Client",
+        "z": "54231982a4bda1ef",
+        "endpoint": "c4f6baf70c4b37df",
+        "action": "write",
+        "deadbandtype": "a",
+        "deadbandvalue": 1,
+        "time": 10,
+        "timeUnit": "s",
+        "certificate": "n",
+        "localfile": "",
+        "localkeyfile": "",
+        "securitymode": "None",
+        "securitypolicy": "None",
+        "useTransport": false,
+        "maxChunkCount": 1,
+        "maxMessageSize": 8192,
+        "receiveBufferSize": 8192,
+        "sendBufferSize": 8192,
+        "setstatusandtime": false,
+        "keepsessionalive": false,
+        "name": "",
+        "applicationName": "",
+        "applicationUri": "",
+        "x": 780,
+        "y": 180,
+        "wires": [
+            [
+                "4ef3f55d19bb4167"
+            ],
+            [
+                "4ef3f55d19bb4167"
+            ],
+            [
+                "4ef3f55d19bb4167"
+            ]
+        ]
+    },
+    {
+        "id": "d1d736068721bc18",
+        "type": "inject",
+        "z": "54231982a4bda1ef",
+        "name": "",
+        "props": [
+            {
+                "p": "topic",
+                "vt": "str"
+            },
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "true",
+        "payloadType": "bool",
+        "x": 310,
+        "y": 160,
+        "wires": [
+            [
+                "6853edeb27d61bb6"
+            ]
+        ],
+        "info": "Wenn payload gesetzt, wird dieser in dem folgenden\r\nItem verwendet, da der Button dies machen muss\r\nwird hier auch der Payload verwandt"
+    },
+    {
+        "id": "6853edeb27d61bb6",
+        "type": "OpcUa-Item",
+        "z": "54231982a4bda1ef",
+        "item": "ns=3;s=\"-S01\"",
+        "datatype": "Boolean",
+        "value": "",
+        "name": "",
+        "x": 560,
+        "y": 180,
+        "wires": [
+            [
+                "a87104a88432275a"
+            ]
+        ],
+        "info": "value wird aus dem Payload genommen"
+    },
+    {
+        "id": "0c669af55d9f15e1",
+        "type": "comment",
+        "z": "54231982a4bda1ef",
+        "name": "S01 - Start des Magazin Programmes",
+        "info": "",
+        "x": 410,
+        "y": 120,
+        "wires": []
+    },
+    {
+        "id": "cbd525717fff03ab",
+        "type": "comment",
+        "z": "54231982a4bda1ef",
+        "name": "manuelle Bilderstellung",
+        "info": "",
+        "x": 380,
+        "y": 300,
+        "wires": []
+    },
+    {
+        "id": "b25195c62f71f4f4",
+        "type": "comment",
+        "z": "54231982a4bda1ef",
+        "name": "Sensor Trigger des Capture",
+        "info": "",
+        "x": 140,
+        "y": 400,
+        "wires": []
+    },
+    {
+        "id": "7dcd8cbc6d2c6b0d",
+        "type": "comment",
+        "z": "54231982a4bda1ef",
+        "d": true,
+        "name": "Nochmal anzeigen des letzten Bildes",
+        "info": "",
+        "x": 320,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "302a130612e56d9e",
+        "type": "comment",
+        "z": "54231982a4bda1ef",
+        "name": "Abfragen ob neues Bild vorhanden",
+        "info": "Abfrage an den Server, ob ein neuere Bild\nvorhanden ist.\n\nOptimierbar, indem man den Server so \nanfragt, dass man den Timestamp des letzt\ngespeicherten Bildes übergibt oder indem\nman eine Server Route etabliert, die nur \ndas letzte Bild liefert",
+        "x": 300,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "4b3d8d7c43c02a11",
+        "type": "ui-group",
+        "name": "CaptureImage",
+        "page": "b0e045ba81ac526b",
+        "width": 6,
+        "height": 1,
+        "order": 2,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "c54d9828c05ec1d5",
+        "type": "ui-group",
+        "name": "Capture",
+        "page": "b0e045ba81ac526b",
+        "width": 6,
+        "height": 1,
+        "order": 1,
+        "showTitle": true,
+        "className": "",
+        "visible": "true",
+        "disabled": "false",
+        "groupType": "default"
+    },
+    {
+        "id": "c0252172b2255454",
+        "type": "OpcUa-Endpoint",
+        "endpoint": "opc.tcp://172.23.193.30:4840",
+        "secpol": "None",
+        "secmode": "None",
+        "none": true,
+        "login": false,
+        "usercert": false,
+        "usercertificate": "",
+        "userprivatekey": ""
+    },
+    {
+        "id": "c4f6baf70c4b37df",
+        "type": "OpcUa-Endpoint",
+        "endpoint": "opc.tcp://172.23.193.10:4840",
+        "secpol": "None",
+        "secmode": "None",
+        "none": true,
+        "login": false,
+        "usercert": false,
+        "usercertificate": "",
+        "userprivatekey": ""
+    },
+    {
+        "id": "b0e045ba81ac526b",
+        "type": "ui-page",
+        "name": "ISEL",
+        "ui": "8b25396788a55a1f",
+        "path": "/page5",
+        "icon": "home",
+        "layout": "grid",
+        "theme": "28d3b4f19cb83d7a",
+        "breakpoints": [
+            {
+                "name": "Default",
+                "px": "0",
+                "cols": "3"
+            },
+            {
+                "name": "Tablet",
+                "px": "576",
+                "cols": "6"
+            },
+            {
+                "name": "Small Desktop",
+                "px": "768",
+                "cols": "9"
+            },
+            {
+                "name": "Desktop",
+                "px": "1024",
+                "cols": "12"
+            }
+        ],
+        "order": 1,
+        "className": "",
+        "visible": "true",
+        "disabled": "false"
+    },
+    {
+        "id": "8b25396788a55a1f",
+        "type": "ui-base",
+        "name": "Mein Dashboard",
+        "path": "/dashboard",
+        "appIcon": "",
+        "includeClientData": true,
+        "acceptsClientConfig": [
+            "ui-notification",
+            "ui-control"
+        ],
+        "showPathInSidebar": false,
+        "headerContent": "page",
+        "navigationStyle": "default",
+        "titleBarStyle": "default",
+        "showReconnectNotification": true,
+        "notificationDisplayTime": 1,
+        "showDisconnectNotification": true,
+        "allowInstall": false
+    },
+    {
+        "id": "28d3b4f19cb83d7a",
+        "type": "ui-theme",
+        "name": "Standardthema",
+        "colors": {
+            "surface": "#ffffff",
+            "primary": "#0094CE",
+            "bgPage": "#eeeeee",
+            "groupBg": "#ffffff",
+            "groupOutline": "#cccccc"
+        },
+        "sizes": {
+            "density": "default",
+            "pagePadding": "12px",
+            "groupGap": "12px",
+            "groupBorderRadius": "4px",
+            "widgetGap": "12px"
+        }
+    }
+]

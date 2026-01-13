@@ -65,6 +65,12 @@ namespace CamCapture
                 int rl = action.Route.Length;
                 if (needle.StartsWith(action.Route) && rl > matchCount) 
                 {
+                    // what we want is that /capture/index will match route /capture as well as /capture itself
+                    // here it might be that /caturex will be matched für /capture because it starts also with capture
+                    string remaining = needle.Substring(rl);
+                    // we strip the route from the needle - if it contains a subpath, it is okay - otherwise not
+                    if ((remaining.Length > 0) && !remaining.StartsWith("/")) continue;
+
                     matchCount = rl;
                     candidate = action;
                 }

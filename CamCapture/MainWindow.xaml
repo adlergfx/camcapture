@@ -24,8 +24,8 @@
                 </TransformGroup>
             </GroupBox.RenderTransform>
             <Grid>
-                <TextBox x:Name="tbFolder" Margin="7,12,67,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="23" ToolTip="Directory to store images" Text="{Binding Folder, Mode=TwoWay}" IsEnabled="{Binding IsCameraDisabled}"/>
-                <Button x:Name="btnBrowse" Content="..." Margin="0,12,9,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="50" Height="23" Click="onBrowseDirectory" ToolTip="Browse Directories" IsEnabled="{Binding IsCameraDisabled}"/>
+                <TextBox x:Name="tbFolder" Margin="7,12,67,0" TextWrapping="Wrap" VerticalAlignment="Top" Height="23" ToolTip="Directory to store images" Text="{Binding Folder, Mode=TwoWay}" IsEnabled="{Binding IsFolderEditable}"/>
+                <Button x:Name="btnBrowse" Content="..." Margin="0,12,9,0" VerticalAlignment="Top" HorizontalAlignment="Right" Width="50" Height="23" Click="onBrowseDirectory" ToolTip="Browse Directories" IsEnabled="{Binding IsFolderEditable}"/>
                 <TextBox x:Name="tbServer" Margin="58,0,66,8" TextWrapping="Wrap" Height="23" VerticalAlignment="Bottom" TextChanged="tbServer_TextChanged" Text="8083" TextAlignment="Center" ToolTip="Select Port where Server will be bound"/>
                 <Button x:Name="btnServer" Content="4" Margin="0,0,8,8" Height="23" VerticalAlignment="Bottom" HorizontalAlignment="Right" Width="50" Click="onServerStart" FontFamily="Webdings" IsEnabled="False" ToolTip="Start/Stop Server"/>
                 <Label Content="Port" Margin="7,43,0,0" VerticalAlignment="Top" HorizontalAlignment="Left" Width="32"/>
