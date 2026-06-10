@@ -9,6 +9,8 @@ using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media.Imaging;
+using ZXing.Windows.Compatibility;
+using ZXing;
 
 namespace CamCapture;
 
@@ -24,18 +26,24 @@ public partial class MainWindow : Window, INotifyPropertyChanged
     private REST rest;
     private bool preview = false;
     private string? captureName;
+    private REST.Code code = null;
+
+    private BarcodeReader barcodeReader;
 
     private const string SYM_START = "4";
     private const string SYM_STOP  = "<";
     private const string DEF_PREFIX = "";
     private const string DATE_FORMAT = "yyyyMMddHHmmss";
 
+ 
 
 
     public MainWindow()
     {
         Log.Create("camcapturelog.txt");
         Log.Get().OnLogEvent += MainWindow_OnLogEvent;
+
+        barcodeReader = new BarcodeReader();
 
         DataContext = this;
         cameraManager = new DSCameraManager();
@@ -55,10 +63,16 @@ public partial class MainWindow : Window, INotifyPropertyChanged
         rest.CaptureFunc = onCapture;
         rest.QueryFunc = onList;
         rest.ImageFunc = onImage;
+        rest.CodeFunc = onCode;
         tbServer_TextChanged(null, null);
         getCameras();
 
         Log.Info("initialized");
+    }
+
+    private REST.Code onCode()
+    {
+        return code;
     }
 
     private void MainWindow_OnLogEvent(Log.LogLevel level, string message)
@@ -225,7 +239,22 @@ public partial class MainWindow : Window, INotifyPropertyChanged
 
     private void CameraManager_OnFrame(Bitmap bmp, BitmapImage bi)
     {
+        Result res = barcodeReader.Decode(bmp);
+        if (res != null)
+        {
+            code = new REST.Code( 
+                res.Text, 
+                res.Timestamp.ToString()
+            );
+
+            //Console.WriteLine(res.BarcodeFormat.ToString());
+            //Console.WriteLine(res.Text);
+            //Console.WriteLine(res.Timestamp.ToString());
+        }
+
         if (!HasCapture && !Preview) return;
+
+       
 
         Dispatcher.Invoke(() =>
         {

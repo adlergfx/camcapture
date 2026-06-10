@@ -132,7 +132,7 @@ namespace CamCapture
         {
             listener = new HttpListener();
             // Attention: pathes have to end with /
-            listener.Prefixes.Add($"http://*:{port}/");
+            listener.Prefixes.Add($"http://+:{port}/");
             try
             {
                 listener.Start();

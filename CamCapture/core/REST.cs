@@ -17,6 +17,9 @@ namespace CamCapture.core
     /// </summary>
     internal class REST
     {
+        public record Code(string payload, string timestamp);
+        
+
         /// <summary>
         /// Function Specification that will be called on Capture Requests
         /// </summary>
@@ -27,9 +30,11 @@ namespace CamCapture.core
         /// <returns>full path of file if exists or null</returns>
         public delegate string ? TImageFunc(string name);
         public delegate string[] TQueryFunc(string? prefix, string ? from, string ? to);
+        public delegate Code TCodeFunc();
         private TImageFunc ? imageFunc;
         private TCaptureFunc ? captureFunc;
         private TQueryFunc ? queryFunc;
+        private TCodeFunc? codeFunc;
         private HTTPServer server;
         private byte[] readBuffer = new byte[1024 * 1024];
 
@@ -44,7 +49,10 @@ namespace CamCapture.core
             server.AddRouteAction(HttpMethod.Get, new RouteAction("/capture", onGetCapture ));
             server.AddRouteAction(HttpMethod.Get, new RouteAction("/list", onGetList));
             server.AddRouteAction(HttpMethod.Get, new RouteAction("/image", onGetImage));
+            server.AddRouteAction(HttpMethod.Get, new RouteAction("/code", onGetCode));
         }
+
+        public TCodeFunc CodeFunc {  set => codeFunc = value; }
 
         public TImageFunc ImageFunc { set => imageFunc = value; }
 
@@ -128,6 +136,19 @@ namespace CamCapture.core
             string? file = captureFunc(prefix);
             if (file == null) return false;
             sendJson(response, System.IO.Path.GetFileName(file));
+            return true;
+        }
+
+        private bool onGetCode(HttpListenerRequest request, HttpListenerResponse response)
+        {
+            if (codeFunc == null) return false;
+
+            Code c = codeFunc();
+            if (c == null) 
+                sendJson(response, new object { });
+            else 
+                sendJson(response, c);
+
             return true;
         }
 

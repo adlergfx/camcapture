@@ -12,6 +12,7 @@ using System.Windows.Media.Imaging;
 using System.Windows.Media.Media3D;
 using System.Windows.Threading;
 
+
 namespace CamCapture.core
 {
     class CameraManager : ICameraManager
@@ -25,8 +26,9 @@ namespace CamCapture.core
         private Action<Bitmap, BitmapImage> OnFrame;
 
 
+
         public CameraManager() {
-            availableCameraNames = getAvailableCameras();
+            availableCameraNames = getAvailableCameras(); 
         }
 
         public void SetFrameListener(Action<Bitmap, BitmapImage> handler)
@@ -74,6 +76,7 @@ namespace CamCapture.core
             bi.EndInit();
             bi.Freeze();
 
+            
             if (OnFrame != null) OnFrame(bmp, bi);
         }
 
